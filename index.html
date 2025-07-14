@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stellar Converter | PDF & Image Tools</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom CSS for theme, animations, and sparkle effect */
+        :root {
+            --bg-light: #f7fafc;
+            --text-light: #2d3748;
+            --card-bg-light: #ffffff;
+            --border-light: #e2e8f0;
+            --hover-bg-light: #edf2f7;
+
+            --bg-dark: #1a202c;
+            --text-dark: #e2e8f0;
+            --card-bg-dark: #2d3748;
+            --border-dark: #4a5568;
+            --hover-bg-dark: #4a5568;
+        }
+
+        /* Light Theme */
+        body.light {
+            background-color: var(--bg-light);
+            color: var(--text-light);
+        }
+        .light .card {
+            background-color: var(--card-bg-light);
+            border-color: var(--border-light);
+        }
+        .light .card:hover {
+            background-color: var(--hover-bg-light);
+        }
+        .light .theme-switcher .sun { display: none; }
+        .light .theme-switcher .moon { display: block; }
+        .light .prose { color: var(--text-light); }
+        .light .file-drop-area { border-color: var(--border-light); }
+
+        /* Dark Theme */
+        html.dark body {
+            background-color: var(--bg-dark);
+            color: var(--text-dark);
+        }
+        html.dark .card {
+            background-color: var(--card-bg-dark);
+            border-color: var(--border-dark);
+        }
+        html.dark .card:hover {
+            background-color: var(--hover-bg-dark);
+        }
+        html.dark .theme-switcher .sun { display: block; }
+        html.dark .theme-switcher .moon { display: none; }
+        html.dark .prose { color: var(--text-dark); }
+        html.dark .file-drop-area { border-color: var(--border-dark); }
+        
+        /* General Styling */
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            overflow-x: hidden;
+        }
+
+        /* Card Animation */
+        .card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Sparkle Effect */
+        #sparkle-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .sparkle {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background-color: #f6e05e; /* A nice yellow for sparkles */
+            border-radius: 50%;
+            animation: sparkle-animation 1.5s linear infinite;
+            opacity: 0;
+        }
+
+        @keyframes sparkle-animation {
+            0% { transform: scale(0.5); opacity: 0.5; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(0.5); opacity: 0.5; }
+        }
+        
+        /* Custom file input button */
+        .custom-file-button {
+            background-color: #4f46e5;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .custom-file-button:hover {
+            background-color: #4338ca;
+        }
+
+        /* Output image styling */
+        .output-image-container {
+            border: 1px solid var(--border-dark);
+            transition: all 0.2s ease;
+        }
+        .light .output-image-container {
+            border-color: var(--border-light);
+        }
+        .output-image-container:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(79, 70, 229, 0.5);
+        }
+    </style>
+</head>
+<body class="dark">
+
+    <!-- Sparkle Background Container -->
+    <div id="sparkle-container"></div>
+
+    <div class="relative min-h-screen p-4 sm:p-6 lg:p-8">
+        <!-- Header -->
+        <header class="flex justify-between items-center mb-8">
+            <h1 class="text-2xl sm:text-3xl font-bold tracking-tight prose">
+                Stellar Converter
+            </h1>
+            <button id="theme-switcher" class="theme-switcher p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" aria-label="Toggle theme">
+                <!-- Sun Icon for Dark Mode -->
+                <svg class="sun h-6 w-6 text-yellow-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                <!-- Moon Icon for Light Mode -->
+                <svg class="moon h-6 w-6 text-gray-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                </svg>
+            </button>
+        </header>
+
+        <main class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- PDF to Image Converter Card -->
+            <section id="pdf-to-image" class="card rounded-xl p-6 border">
+                <div class="prose">
+                    <h2 class="text-xl font-bold mb-2">PDF to Image</h2>
+                    <p class="text-sm opacity-80 mb-4">Upload a PDF file to convert its pages into high-quality PNG images.</p>
+                </div>
+                <div class="file-drop-area border-2 border-dashed rounded-lg p-8 text-center cursor-pointer">
+                    <input type="file" id="pdf-upload" accept=".pdf" class="hidden">
+                    <label for="pdf-upload" class="cursor-pointer">
+                        <p class="mb-2">Drag & drop your PDF here, or</p>
+                        <span class="custom-file-button">Browse File</span>
+                    </label>
+                </div>
+                <div id="pdf-progress" class="mt-4 hidden">
+                    <p class="text-center mb-2">Converting...</p>
+                    <div class="w-full bg-gray-600 rounded-full h-2.5">
+                        <div id="pdf-progress-bar" class="bg-indigo-500 h-2.5 rounded-full" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div id="pdf-output" class="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"></div>
+            </section>
+
+            <!-- Image to PDF Converter Card -->
+            <section id="image-to-pdf" class="card rounded-xl p-6 border">
+                 <div class="prose">
+                    <h2 class="text-xl font-bold mb-2">Image to PDF</h2>
+                    <p class="text-sm opacity-80 mb-4">Upload multiple images (PNG, JPG) to combine them into a single PDF document.</p>
+                </div>
+                <div class="file-drop-area border-2 border-dashed rounded-lg p-8 text-center cursor-pointer">
+                    <input type="file" id="image-upload" accept="image/png, image/jpeg" multiple class="hidden">
+                    <label for="image-upload" class="cursor-pointer">
+                        <p class="mb-2">Drag & drop your images here, or</p>
+                        <span class="custom-file-button">Browse Files</span>
+                    </label>
+                </div>
+                <div id="image-preview" class="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"></div>
+                <div id="image-action" class="mt-6 text-center hidden">
+                    <button id="convert-to-pdf-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition-colors duration-200">
+                        Convert to PDF
+                    </button>
+                </div>
+                <div id="image-progress" class="mt-4 hidden">
+                     <p class="text-center">Generating PDF...</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // Set workerSrc for pdf.js
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js`;
+        const { jsPDF } = window.jspdf;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Theme Switcher ---
+            const themeSwitcher = document.getElementById('theme-switcher');
+            const body = document.body;
+            const html = document.documentElement;
+
+            themeSwitcher.addEventListener('click', () => {
+                if (html.classList.contains('dark')) {
+                    html.classList.remove('dark');
+                    body.classList.add('light');
+                } else {
+                    html.classList.add('dark');
+                    body.classList.remove('light');
+                }
+            });
+
+            // --- Sparkle Effect ---
+            const sparkleContainer = document.getElementById('sparkle-container');
+            const sparkleCount = 30;
+            for (let i = 0; i < sparkleCount; i++) {
+                const sparkle = document.createElement('div');
+                sparkle.className = 'sparkle';
+                sparkle.style.top = `${Math.random() * 100}%`;
+                sparkle.style.left = `${Math.random() * 100}%`;
+                sparkle.style.animationDelay = `${Math.random() * 2}s`;
+                sparkle.style.animationDuration = `${1 + Math.random() * 2}s`;
+                sparkleContainer.appendChild(sparkle);
+            }
+            
+            // --- Drag and Drop Helper ---
+            function setupDragAndDrop(areaElement, fileInputElement) {
+                areaElement.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    areaElement.classList.add('bg-indigo-900', 'opacity-50');
+                });
+                 areaElement.addEventListener('dragleave', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    areaElement.classList.remove('bg-indigo-900', 'opacity-50');
+                });
+                areaElement.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    areaElement.classList.remove('bg-indigo-900', 'opacity-50');
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0) {
+                        fileInputElement.files = files;
+                        // Manually trigger change event
+                        const event = new Event('change', { bubbles: true });
+                        fileInputElement.dispatchEvent(event);
+                    }
+                });
+            }
+
+            // --- PDF to Image Converter ---
+            const pdfUpload = document.getElementById('pdf-upload');
+            const pdfProgress = document.getElementById('pdf-progress');
+            const pdfProgressBar = document.getElementById('pdf-progress-bar');
+            const pdfOutput = document.getElementById('pdf-output');
+            const pdfDropArea = document.querySelector('#pdf-to-image .file-drop-area');
+
+            setupDragAndDrop(pdfDropArea, pdfUpload);
+            
+            pdfUpload.addEventListener('change', async (event) => {
+                const file = event.target.files[0];
+                if (!file || file.type !== 'application/pdf') return;
+
+                pdfProgress.classList.remove('hidden');
+                pdfOutput.innerHTML = '';
+                pdfProgressBar.style.width = '0%';
+
+                const fileReader = new FileReader();
+                fileReader.onload = async (e) => {
+                    const typedarray = new Uint8Array(e.target.result);
+                    const pdf = await pdfjsLib.getDocument({ data: typedarray }).promise;
+                    
+                    for (let i = 1; i <= pdf.numPages; i++) {
+                        const page = await pdf.getPage(i);
+                        const viewport = page.getViewport({ scale: 1.5 });
+                        
+                        const canvas = document.createElement('canvas');
+                        const context = canvas.getContext('2d');
+                        canvas.height = viewport.height;
+                        canvas.width = viewport.width;
+
+                        await page.render({ canvasContext: context, viewport: viewport }).promise;
+                        
+                        const imgData = canvas.toDataURL('image/png');
+                        
+                        const container = document.createElement('div');
+                        container.className = 'output-image-container relative group rounded-lg overflow-hidden';
+
+                        const imgElement = document.createElement('img');
+                        imgElement.src = imgData;
+                        imgElement.className = 'w-full h-full object-cover';
+
+                        const downloadLink = document.createElement('a');
+                        downloadLink.href = imgData;
+                        downloadLink.download = `${file.name.replace('.pdf', '')}_page_${i}.png`;
+                        downloadLink.className = 'absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity';
+                        downloadLink.innerHTML = `<svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>`;
+                        
+                        container.appendChild(imgElement);
+                        container.appendChild(downloadLink);
+                        pdfOutput.appendChild(container);
+
+                        // Update progress bar
+                        pdfProgressBar.style.width = `${(i / pdf.numPages) * 100}%`;
+                    }
+                    pdfProgress.classList.add('hidden');
+                };
+                fileReader.readAsArrayBuffer(file);
+            });
+
+            // --- Image to PDF Converter ---
+            const imageUpload = document.getElementById('image-upload');
+            const imagePreview = document.getElementById('image-preview');
+            const imageAction = document.getElementById('image-action');
+            const convertToPdfBtn = document.getElementById('convert-to-pdf-btn');
+            const imageProgress = document.getElementById('image-progress');
+            const imageDropArea = document.querySelector('#image-to-pdf .file-drop-area');
+            let uploadedImages = [];
+
+            setupDragAndDrop(imageDropArea, imageUpload);
+
+            imageUpload.addEventListener('change', (event) => {
+                imagePreview.innerHTML = '';
+                uploadedImages = [];
+                const files = event.target.files;
+
+                if (files.length === 0) {
+                    imageAction.classList.add('hidden');
+                    return;
+                }
+
+                imageAction.classList.remove('hidden');
+
+                Array.from(files).forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const imgData = e.target.result;
+                        uploadedImages.push({ data: imgData, name: file.name });
+                        
+                        const imgElement = document.createElement('img');
+                        imgElement.src = imgData;
+                        imgElement.className = 'w-full h-auto object-cover rounded-lg border border-gray-600';
+                        imagePreview.appendChild(imgElement);
+                    };
+                    reader.readAsDataURL(file);
+                });
+            });
+
+            convertToPdfBtn.addEventListener('click', () => {
+                if (uploadedImages.length === 0) return;
+
+                imageAction.classList.add('hidden');
+                imageProgress.classList.remove('hidden');
+
+                // Use a timeout to allow UI to update before blocking with PDF generation
+                setTimeout(() => {
+                    const doc = new jsPDF();
+                    
+                    uploadedImages.forEach((imgInfo, index) => {
+                        if (index > 0) {
+                            doc.addPage();
+                        }
+                        const img = new Image();
+                        img.src = imgInfo.data;
+                        const imgProps = doc.getImageProperties(img);
+                        const pdfWidth = doc.internal.pageSize.getWidth();
+                        const pdfHeight = doc.internal.pageSize.getHeight();
+                        const widthRatio = pdfWidth / imgProps.width;
+                        const heightRatio = pdfHeight / imgProps.height;
+                        const ratio = Math.min(widthRatio, heightRatio);
+
+                        const imgWidth = imgProps.width * ratio;
+                        const imgHeight = imgProps.height * ratio;
+                        
+                        const x = (pdfWidth - imgWidth) / 2;
+                        const y = (pdfHeight - imgHeight) / 2;
+
+                        doc.addImage(imgInfo.data, 'PNG', x, y, imgWidth, imgHeight);
+                    });
+
+                    doc.save('converted_document.pdf');
+                    
+                    // Reset UI
+                    imageProgress.classList.add('hidden');
+                    imagePreview.innerHTML = '';
+                    uploadedImages = [];
+                    imageUpload.value = ''; // Clear file input
+                }, 100);
+            });
+        });
+    </script>
+
+</body>
+</html>
